@@ -1,0 +1,4 @@
+@tailwind base; @tailwind components; @tailwind utilities;
+html, body { background:#0A0A0A; color:#fff; }
+h1,h2,h3 { @apply font-goth tracking-ultrawide uppercase; }
+.brand-accent { background: linear-gradient(90deg, #FF6A00, #2CFF75, #FFF240); -webkit-background-clip: text; color: transparent; }
