@@ -1,0 +1,78 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite" // swap to "postgresql" for production (Neon/Supabase)
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String   @id @default(cuid())
+  email            String   @unique
+  createdAt        DateTime @default(now())
+  stripeCustomerId String?  @unique
+  role             Role     @default(USER)
+  subscriptions    Subscription[]
+  listings         Listing[]
+}
+
+model Subscription {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id])
+  stripeSubId    String   @unique
+  status         String
+  currentPeriodEnd DateTime
+  createdAt      DateTime @default(now())
+}
+
+model Listing {
+  id            String   @id @default(cuid())
+  userId        String?  // null for guest
+  user          User?    @relation(fields: [userId], references: [id])
+  email         String   // for guests, to deliver links/receipt
+  title         String
+  location      String
+  startsAt      DateTime
+  endsAt        DateTime
+  qrSlug        String   @unique
+  status        ListingStatus @default(DRAFT) // DRAFT -> ACTIVE -> EXPIRED
+  stripePaymentId String? @unique
+  createdAt     DateTime @default(now())
+  posters       Poster[]
+}
+
+model Poster {
+  id         String   @id @default(cuid())
+  listingId  String
+  listing    Listing  @relation(fields: [listingId], references: [id])
+  style      PosterStyle
+  url        String   // storage path or generated on demand
+  createdAt  DateTime @default(now())
+}
+
+model Payment {
+  id            String   @id @default(cuid())
+  listingId     String?
+  userId        String?
+  amount        Int      // cents
+  currency      String   @default("usd")
+  type          PaymentType
+  stripeIntent  String   @unique
+  createdAt     DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actor     String   // email or 'system'
+  action    String
+  targetId  String?
+  meta      Json?
+  createdAt DateTime @default(now())
+}
+
+enum Role { USER ADMIN }
+enum ListingStatus { DRAFT ACTIVE EXPIRED }
+enum PosterStyle { MINIMAL BOLD NEWS }
+enum PaymentType { LISTING SUBSCRIPTION }
