@@ -1,4 +1,4 @@
-run-name: name: SaleTAGr.app
+run-name: SaleTAGr.app
 
 on:
   push:

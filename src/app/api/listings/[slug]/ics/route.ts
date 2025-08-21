@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
 import { icsFile } from "@/lib/calendar";
-
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 export async function GET(_:NextRequest, { params }:{ params:{ slug:string }}) {
   const listing = await prisma.listing.findFirst({ where:{ qrSlug: params.slug, status: "ACTIVE" }});

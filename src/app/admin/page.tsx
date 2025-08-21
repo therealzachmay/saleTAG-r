@@ -1,7 +1,5 @@
-import { PrismaClient } from "@prisma/client";
 import { format } from "date-fns";
-
-const prisma = new PrismaClient();
+import { prisma } from "../../lib/prisma";
 
 export default async function Admin() {
   const [listings, subs, payments] = await Promise.all([
@@ -10,9 +8,42 @@ export default async function Admin() {
     prisma.payment.findMany({ orderBy: { createdAt: "desc" } })
   ]);
 
-  const revenue = payments.reduce((sum, p)=> sum + p.amount, 0);
-  const activeListings = listings.filter(l => l.status === "ACTIVE").length;
-  const expiringSoon = listings.filter(l => l.status === "ACTIVE" && (l.endsAt.getTime() - Date.now()) < 24*60*60*1000).length;
+  interface Listing {
+    id: string;
+    title: string;
+    location: string;
+    status: string;
+    startsAt: Date;
+    endsAt: Date;
+    createdAt: Date;
+    qrSlug: string;
+  }
+
+  interface User {
+    id: string;
+    email: string;
+  }
+
+  interface Subscription {
+    id: string;
+    stripeSubId: string;
+    status: string;
+    currentPeriodEnd: Date;
+    createdAt: Date;
+    user: User;
+  }
+
+  interface Payment {
+    id: string;
+    type: string;
+    amount: number;
+    stripeIntent: string;
+    createdAt: Date;
+  }
+
+  const revenue = payments.reduce((sum: number, p: Payment) => sum + p.amount, 0);
+  const activeListings = (listings as Listing[]).filter((l: Listing) => l.status === "ACTIVE").length;
+  const expiringSoon = (listings as Listing[]).filter((l: Listing) => l.status === "ACTIVE" && (l.endsAt.getTime() - Date.now()) < 24*60*60*1000).length;
 
   return (
     <main>
@@ -28,7 +59,7 @@ export default async function Admin() {
         <table className="w-full text-sm bg-white text-black rounded overflow-hidden">
           <thead className="bg-neutral-200"><tr><Th>Title</Th><Th>Location</Th><Th>Status</Th><Th>Start</Th><Th>End</Th><Th>QR</Th><Th>Actions</Th></tr></thead>
           <tbody>
-            {listings.map(l=>(
+            {listings.map((l: Listing) => (
               <tr key={l.id} className="border-b">
                 <Td>{l.title}</Td>
                 <Td>{l.location}</Td>
@@ -51,12 +82,12 @@ export default async function Admin() {
         <table className="w-full text-sm bg-white text-black rounded overflow-hidden">
           <thead className="bg-neutral-200"><tr><Th>User</Th><Th>Stripe</Th><Th>Status</Th><Th>Period End</Th></tr></thead>
           <tbody>
-            {subs.map(s=>(
+            {(subs as Subscription[]).map((s: Subscription): JSX.Element => (
               <tr key={s.id} className="border-b">
-                <Td>{s.user.email}</Td>
-                <Td>{s.stripeSubId}</Td>
-                <Td>{s.status}</Td>
-                <Td>{format(s.currentPeriodEnd,"PPp")}</Td>
+              <Td>{s.user.email}</Td>
+              <Td>{s.stripeSubId}</Td>
+              <Td>{s.status}</Td>
+              <Td>{format(s.currentPeriodEnd,"PPp")}</Td>
               </tr>
             ))}
           </tbody>
@@ -68,12 +99,12 @@ export default async function Admin() {
         <table className="w-full text-sm bg-white text-black rounded overflow-hidden">
           <thead className="bg-neutral-200"><tr><Th>Type</Th><Th>Amount</Th><Th>Stripe</Th><Th>Date</Th></tr></thead>
           <tbody>
-            {payments.map(p=>(
+            {payments.map((p: Payment): JSX.Element => (
               <tr key={p.id} className="border-b">
-                <Td>{p.type}</Td>
-                <Td>${(p.amount/100).toFixed(2)}</Td>
-                <Td>{p.stripeIntent}</Td>
-                <Td>{format(p.createdAt,"PPp")}</Td>
+              <Td>{p.type}</Td>
+              <Td>${(p.amount/100).toFixed(2)}</Td>
+              <Td>{p.stripeIntent}</Td>
+              <Td>{format(p.createdAt, "PPp")}</Td>
               </tr>
             ))}
           </tbody>
@@ -84,4 +115,4 @@ export default async function Admin() {
 }
 function Card({ title, children }:{ title:string; children:any }) { return <div className="p-4 bg-white text-black rounded"><div className="text-sm opacity-70">{title}</div><div className="text-2xl font-bold">{children}</div></div>; }
 function Th({children}:{children:any}){return <th className="text-left p-2">{children}</th>}
-function Td({children}:{children:any}){return <td className="p-2">{children}</td>}
+function Td({children, className}:{children:any; className?:string}){return <td className={`p-2 ${className ?? ""}`}>{children}</td>}

@@ -1,11 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-import { generatePosterPdf } from "@/lib/posters";
-
-const prisma = new PrismaClient();
+import { generatePosterPdf } from "../../../../../lib/posters";
+import { prisma } from "../../../../../lib/prisma";
 
 export async function POST(req:NextRequest, { params }:{ params:{ id:string }}) {
-  const { style } = await req.json() as { style: "MINIMAL"|"BOLD"|"NEWS" };
+  let style: "MINIMAL"|"BOLD"|"NEWS" = "MINIMAL";
+  const ct = req.headers.get("content-type") || "";
+  if (ct.includes("application/json")) {
+    const body = await req.json();
+    style = body.style ?? style;
+  } else {
+    // handle form submissions
+    const form = await req.formData();
+    const s = form.get("style");
+    if (typeof s === "string") style = s as any;
+  }
   const listing = await prisma.listing.findUnique({ where:{ id: params.id }});
   if (!listing) return NextResponse.json({ error: "Not found"}, { status:404 });
 

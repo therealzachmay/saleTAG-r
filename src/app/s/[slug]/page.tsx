@@ -1,7 +1,6 @@
-import { PrismaClient } from "@prisma/client";
 import { googleCalendarUrl } from "@/lib/calendar";
-
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
+import Share from "@/components/Share";
 
 export default async function SalePage({ params }:{ params:{ slug:string }}) {
   const listing = await prisma.listing.findFirst({ where:{ qrSlug: params.slug }});
@@ -24,7 +23,7 @@ export default async function SalePage({ params }:{ params:{ slug:string }}) {
       <div className="flex gap-3 mt-4">
         <a className="px-3 py-2 bg-white text-black rounded" href={gUrl} target="_blank">Add to Google</a>
         <a className="px-3 py-2 bg-white text-black rounded" href={icsUrl}>Add to Apple/Outlook</a>
-        <Share url={`${process.env.NEXT_PUBLIC_BASE_URL}/s/${params.slug}`} />
+  <Share url={`${process.env.NEXT_PUBLIC_BASE_URL}/s/${params.slug}`} />
       </div>
       <div className="mt-10">
         <a className="underline" href={`https://maps.google.com/?q=${encodeURIComponent(listing.location)}`} target="_blank">Open in Google Maps</a>
@@ -35,7 +34,7 @@ export default async function SalePage({ params }:{ params:{ slug:string }}) {
 
 function Ended(){ return <main className="p-10 text-center"><h2 className="text-3xl mb-2">Sale Ended</h2><p>Thanks for your interest!</p></main>; }
 
-function Share({ url }:{ url:string }) {
+function LocalShare({ url }:{ url:string }) {
   const fb = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
   const wa = `https://wa.me/?text=${encodeURIComponent(url)}`;
   const x  = `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent("Garage Sale!")}`;
@@ -46,7 +45,19 @@ function Share({ url }:{ url:string }) {
       <a className="px-3 py-2 bg-white text-black rounded" href={wa} target="_blank">WhatsApp</a>
       <a className="px-3 py-2 bg-white text-black rounded" href={nd} target="_blank">Nextdoor</a>
       <a className="px-3 py-2 bg-white text-black rounded" href={x} target="_blank">X</a>
-      <button className="px-3 py-2 bg-white text-black rounded" onClick={()=>navigator.clipboard.writeText(url)}>Copy Link</button>
+      <button
+        className="px-3 py-2 bg-white text-black rounded"
+        onClick={async () => {
+          try {
+            await navigator.clipboard.writeText(url);
+            alert("Link copied!");
+          } catch (err) {
+            alert("Failed to copy link.");
+          }
+        }}
+      >
+        Copy Link
+      </button>
     </div>
   );
 }

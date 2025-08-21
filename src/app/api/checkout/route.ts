@@ -1,55 +1,95 @@
 import { NextRequest, NextResponse } from "next/server";
-import { stripe } from "@/lib/stripe";
-import { PrismaClient } from "@prisma/client";
-import { LISTING_PRICE, assertThreeDayWindow } from "@/lib/pricing";
+import { stripe } from "../../../lib/stripe";
+import { LISTING_PRICE, assertThreeDayWindow } from "../../../lib/pricing";
 import { randomUUID } from "crypto";
+import { PrismaClient } from "@prisma/client";
 
-const prisma = new PrismaClient();
+// Use a global singleton for Prisma in development to avoid connection storms
+declare global {
+  // eslint-disable-next-line no-var
+  var __prisma: PrismaClient | undefined;
+}
+
+const prisma: PrismaClient = global.__prisma ?? new PrismaClient();
+if (process.env.NODE_ENV !== "production") global.__prisma = prisma;
+
+function badRequest(msg = "Bad request") {
+  return NextResponse.json({ error: msg }, { status: 400 });
+}
 
 export async function POST(req: NextRequest) {
-  const body = await req.json();
-  const { email, title, location, startsAt, endsAt, mode } = body as {
-    email: string; title: string; location: string; startsAt: string; endsAt: string; mode: "LISTING" | "SUBSCRIPTION";
-  };
+  try {
+    const body = await req.json();
+    const { email, title, location, startsAt, endsAt, mode } = body as {
+      email?: string; title?: string; location?: string; startsAt?: string; endsAt?: string; mode?: "LISTING" | "SUBSCRIPTION";
+    };
 
-  if (mode === "LISTING") {
-    const start = new Date(startsAt), end = new Date(endsAt);
-    assertThreeDayWindow(start, end);
+    if (!process.env.NEXT_PUBLIC_BASE_URL) {
+      return NextResponse.json({ error: "Server misconfigured: NEXT_PUBLIC_BASE_URL required" }, { status: 500 });
+    }
 
-    const slug = randomUUID().slice(0,8);
-    const listing = await prisma.listing.create({
-      data: { email, title, location, startsAt: start, endsAt: end, qrSlug: slug, status: "DRAFT" }
-    });
+    if (!mode || !email) return badRequest("mode and email are required");
+
+    if (mode === "LISTING") {
+      if (!startsAt || !endsAt || !title || !location) return badRequest("listing fields missing");
+
+      const start = new Date(startsAt);
+      const end = new Date(endsAt);
+      // will throw if invalid window
+      assertThreeDayWindow(start, end);
+
+      const slug = randomUUID().slice(0, 8);
+      const listing = await prisma.listing.create({
+        data: { email, title, location, startsAt: start, endsAt: end, qrSlug: slug, status: "DRAFT" }
+      });
+
+      const session = await stripe.checkout.sessions.create({
+        mode: "payment",
+        customer_email: email,
+        line_items: [{ price_data: { currency: "usd", product_data: { name: "3-Day Sale Listing" }, unit_amount: LISTING_PRICE }, quantity: 1 }],
+        success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/success?listing=${listing.id}`,
+        cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/cancel`,
+        metadata: { listingId: listing.id, kind: "LISTING" }
+      });
+
+      // session.id is the Checkout Session id; for one-off payments prefer payment intent id when present
+      // session.payment_intent may be a string (id) or object, handle both
+      // @ts-ignore - stripe types for session can vary depending on API
+      const intentId = (session as any).payment_intent ?? session.id;
+
+      await prisma.payment.create({ data: {
+        listingId: listing.id,
+        amount: LISTING_PRICE,
+        currency: "usd",
+        type: "LISTING",
+        stripeIntent: String(intentId)
+      }});
+
+      return NextResponse.json({ url: session.url }, { status: 200 });
+    }
+
+    // SUBSCRIPTION
+    // Reuse a price id if configured; creating products/prices every request is expensive and causes clutter
+    let priceId = process.env.STRIPE_SUBSCRIPTION_PRICE_ID;
+    if (!priceId) {
+      const product = await stripe.products.create({ name: "SaleTAGr Monthly" });
+      const price = await stripe.prices.create({ currency: "usd", unit_amount: 3599, recurring: { interval: "month" }, product: product.id });
+      priceId = price.id;
+    }
 
     const session = await stripe.checkout.sessions.create({
-      mode: "payment",
+      mode: "subscription",
       customer_email: email,
-      line_items: [{ price_data: { currency: "usd", product_data: { name: "3-Day Sale Listing" }, unit_amount: LISTING_PRICE }, quantity: 1 }],
-      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/success?listing=${listing.id}`,
+      line_items: [{ price: priceId, quantity: 1 }],
+      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/account`,
       cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/cancel`,
-      metadata: { listingId: listing.id, kind: "LISTING" }
+      metadata: { kind: "SUBSCRIPTION" }
     });
 
-    await prisma.payment.create({ data: {
-      listingId: listing.id, amount: LISTING_PRICE, currency: "usd", type: "LISTING",
-      stripeIntent: session.id
-    }});
-
     return NextResponse.json({ url: session.url }, { status: 200 });
+  } catch (err: any) {
+    console.error("/api/checkout error:", err);
+    const msg = err?.message ?? "Internal error";
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
-
-  // SUBSCRIPTION
-  const product = await stripe.products.create({ name: "SaleTAGr Monthly" });
-  const price = await stripe.prices.create({ currency: "usd", unit_amount: 3599, recurring: { interval: "month" }, product: product.id });
-
-  const session = await stripe.checkout.sessions.create({
-    mode: "subscription",
-    customer_email: email,
-    line_items: [{ price: price.id, quantity: 1 }],
-    success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/account`,
-    cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/cancel`,
-    metadata: { kind: "SUBSCRIPTION" }
-  });
-
-  return NextResponse.json({ url: session.url }, { status: 200 });
 }
