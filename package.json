@@ -2,8 +2,8 @@
   "name": "saletag-r",
   "version": "0.1.0",
   "private": true,
-  "description": "PUT_YOUR_PROJECT_DESCRIPTION",
-  "author": "Name",
+  "description": "Upgrade your garage sale using 'Sale TAG-r ' & Welcome your sale to the 21st century!" 
+  "author": "Zachery Tyler Mayrhofer",
   "license": "MIT",
   "repository": "https://github.com/therealzachmay/saleTAG-r",
   "scripts": {
@@ -18,7 +18,7 @@
     "prisma:migrate": "prisma migrate dev"
   },
   "engines": {
-    "node": ">=18"
+    "node.js": ">=18"
   },
   "dependencies": {
     "next": "~14.0.0",
