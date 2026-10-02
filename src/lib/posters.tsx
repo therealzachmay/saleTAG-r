@@ -1,5 +1,5 @@
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
-import { qrDataUrl } from "./qr";
+import { qrDataUrl } from "./QR";
 
 type PosterInput = {
   title: string;
