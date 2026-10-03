@@ -2,17 +2,24 @@ import { NextRequest, NextResponse } from "next/server";
 import { generatePosterPdf } from "../../../../../lib/posters";
 import { prisma } from "../../../../../lib/prisma";
 
+const POSTER_STYLES = ["MINIMAL", "BOLD", "NEWS"] as const;
+type PosterStyle = (typeof POSTER_STYLES)[number];
+
+function isPosterStyle(value: unknown): value is PosterStyle {
+  return typeof value === "string" && POSTER_STYLES.includes(value as PosterStyle);
+}
+
 export async function POST(req:NextRequest, { params }:{ params:{ id:string }}) {
-  let style: "MINIMAL"|"BOLD"|"NEWS" = "MINIMAL";
+  let style: PosterStyle = "MINIMAL";
   const ct = req.headers.get("content-type") || "";
   if (ct.includes("application/json")) {
     const body = await req.json();
-    style = body.style ?? style;
+    if (isPosterStyle(body.style)) style = body.style;
   } else {
     // handle form submissions
     const form = await req.formData();
     const s = form.get("style");
-    if (typeof s === "string") style = s as any;
+    if (isPosterStyle(s)) style = s;
   }
   const listing = await prisma.listing.findUnique({ where:{ id: params.id }});
   if (!listing) return NextResponse.json({ error: "Not found"}, { status:404 });

@@ -2,16 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "../../../lib/stripe";
 import { LISTING_PRICE, assertThreeDayWindow } from "../../../lib/pricing";
 import { randomUUID } from "crypto";
-import { PrismaClient } from "@prisma/client";
-
-// Use a global singleton for Prisma in development to avoid connection storms
-declare global {
-  // eslint-disable-next-line no-var
-  var __prisma: PrismaClient | undefined;
-}
-
-const prisma: PrismaClient = global.__prisma ?? new PrismaClient();
-if (process.env.NODE_ENV !== "production") global.__prisma = prisma;
+import { prisma } from "../../../lib/prisma";
 
 function badRequest(msg = "Bad request") {
   return NextResponse.json({ error: msg }, { status: 400 });
@@ -54,8 +45,10 @@ export async function POST(req: NextRequest) {
 
       // session.id is the Checkout Session id; for one-off payments prefer payment intent id when present
       // session.payment_intent may be a string (id) or object, handle both
-      // @ts-ignore - stripe types for session can vary depending on API
-      const intentId = (session as any).payment_intent ?? session.id;
+      const intentId =
+        typeof session.payment_intent === "string"
+          ? session.payment_intent
+          : session.payment_intent?.id ?? session.id;
 
       await prisma.payment.create({ data: {
         listingId: listing.id,
@@ -87,9 +80,9 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ url: session.url }, { status: 200 });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("/api/checkout error:", err);
-    const msg = err?.message ?? "Internal error";
+    const msg = err instanceof Error ? err.message : "Internal error";
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
