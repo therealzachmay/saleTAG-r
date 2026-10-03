@@ -18,7 +18,7 @@
     "prisma:migrate": "prisma migrate dev"
   },
   "engines": {
-    "node.js": ">=18"
+    "node.js": "24.x"
   },
   "dependencies": {
     "next": "~14.0.0",
