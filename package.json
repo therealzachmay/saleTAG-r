@@ -18,7 +18,7 @@
     "prisma:migrate": "prisma migrate dev"
   },
   "engines": {
-    "node.js": "24.x"
+    "node": "24.x"
   },
   "dependencies": {
     "next": "~16.3.8",
@@ -29,7 +29,7 @@
   },
   "devDependencies": {
     "typescript": "^5.0.0",
-    "tailwindcss": "^3.5.0",
+    "tailwindcss": "^3.4.0",
     "postcss": "^8.4.0",
     "autoprefixer": "^10.4.0",
     "prisma": "^5.0.0",
