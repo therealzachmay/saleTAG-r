@@ -18,7 +18,7 @@
     "prisma:migrate": "prisma migrate dev"
   },
   "engines": {
-    "node": "20.14.0"
+    "node": "24.x"
   },
   "dependencies": {
     "next": "~16.3.8",
@@ -36,7 +36,7 @@
     "postcss": "^8.4.0",
     "autoprefixer": "^10.4.0",
     "prisma": "^5.0.0",
-    "@types/qrcode": "^1.5.5",
+    "@types/qrcode": "^1.5.4",
     "@types/react": "^18.0.0",
     "@types/node": "^18.0.0",
     "eslint": "^8.44.0",
