@@ -72,7 +72,24 @@ model AuditLog {
   createdAt DateTime @default(now())
 }
 
-enum Role { USER ADMIN }
-enum ListingStatus { DRAFT ACTIVE EXPIRED }
-enum PosterStyle { MINIMAL BOLD NEWS }
-enum PaymentType { LISTING SUBSCRIPTION }
+enum Role {
+  USER
+  ADMIN
+}
+
+enum ListingStatus {
+  DRAFT
+  ACTIVE
+  EXPIRED
+}
+
+enum PosterStyle {
+  MINIMAL
+  BOLD
+  NEWS
+}
+
+enum PaymentType {
+  LISTING
+  SUBSCRIPTION
+}
