@@ -6,4 +6,4 @@ if (!stripeKey) {
 	throw new Error('Missing required environment variable STRIPE_SECRET_KEY');
 }
 
-export const stripe = new Stripe(stripeKey, { apiVersion: "2024-06-20" });
+export const stripe = new Stripe(stripeKey, { apiVersion: "2022-11-15" });

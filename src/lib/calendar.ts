@@ -30,4 +30,4 @@ export function icsFile({ title, start, end, location, details }:{
     "END:VCALENDAR"
   ].join("\r\n");
 }
-function escapeText(s:string){return s.replace(/([,;])/g,"\\$1").replace(/\n/g,"\\n");}
+function escapeText(s:string){return s.replace(/\\/g,"\\\\").replace(/([,;])/g,"\\$1").replace(/\n/g,"\\n");}
