@@ -1,6 +1,8 @@
 import { format } from "date-fns";
 import { prisma } from "../../lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 export default async function Admin() {
   const [listings, subs, payments] = await Promise.all([
     prisma.listing.findMany({ orderBy: { createdAt: "desc" } }),

@@ -9,7 +9,8 @@ function isPosterStyle(value: unknown): value is PosterStyle {
   return typeof value === "string" && POSTER_STYLES.includes(value as PosterStyle);
 }
 
-export async function POST(req:NextRequest, { params }:{ params:{ id:string }}) {
+export async function POST(req:NextRequest, { params }:{ params: Promise<{ id:string }> }) {
+  const { id } = await params;
   let style: PosterStyle = "MINIMAL";
   const ct = req.headers.get("content-type") || "";
   if (ct.includes("application/json")) {
@@ -21,7 +22,7 @@ export async function POST(req:NextRequest, { params }:{ params:{ id:string }}) 
     const s = form.get("style");
     if (isPosterStyle(s)) style = s;
   }
-  const listing = await prisma.listing.findUnique({ where:{ id: params.id }});
+  const listing = await prisma.listing.findUnique({ where:{ id }});
   if (!listing) return NextResponse.json({ error: "Not found"}, { status:404 });
 
   const url = `${process.env.NEXT_PUBLIC_BASE_URL}/s/${listing.qrSlug}`;

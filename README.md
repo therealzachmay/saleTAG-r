@@ -1,31 +1,40 @@
 # saleTAG-r
 
-This repo is a Next.js (App Router) TypeScript project using TailwindCSS, Prisma, and Stripe.
+This repo is a Next.js (App Router) TypeScript project using Tailwind CSS, Prisma, PostgreSQL, and Stripe.
 
-Quick start
+## Quick start
 
 1. Install dependencies:
 
 ```powershell
-cd <project-directory>
 npm install
 ```
 
-2. Copy `.env.example` to `.env` and set values.
+2. Copy `.env.example` to `.env` and set values. `DATABASE_URL` must point to PostgreSQL. The former local SQLite database is not used by the Vercel deployment.
 
-3. Generate Prisma client:
+3. Create or update the development database schema:
 
 ```powershell
-npx prisma generate
+npm run prisma:migrate
 ```
 
-4. Run dev server:
+Prisma Client is generated automatically during dependency installation.
+
+4. Run the development server:
 
 ```powershell
 npm run dev
 # open http://localhost:3000
 ```
 
-Notes
-- The repo previously lacked a `package.json` and other configs; this adds a minimal manifest and tooling files.
-- I did not install dependencies automatically. Run the commands above locally or tell me to install them for you.
+## Vercel setup
+
+Configure `DATABASE_URL`, `NEXT_PUBLIC_BASE_URL`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `ADMIN_USERNAME`, and `ADMIN_PASSWORD` in the Vercel project environment settings. Use a strong, unique admin password. Set `STRIPE_SUBSCRIPTION_PRICE_ID` if you have created a recurring Stripe Price.
+
+After configuring the production database, apply the committed migration with:
+
+```powershell
+npm run prisma:migrate:deploy
+```
+
+The initial PostgreSQL migration creates an empty schema. It does not copy data from the former local SQLite database.

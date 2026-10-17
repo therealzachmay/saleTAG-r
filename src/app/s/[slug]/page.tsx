@@ -2,8 +2,9 @@ import { googleCalendarUrl } from "@/lib/calendar";
 import { prisma } from "@/lib/prisma";
 import Share from "@/components/Share";
 
-export default async function SalePage({ params }:{ params:{ slug:string }}) {
-  const listing = await prisma.listing.findFirst({ where:{ qrSlug: params.slug }});
+export default async function SalePage({ params }:{ params: Promise<{ slug:string }> }) {
+  const { slug } = await params;
+  const listing = await prisma.listing.findFirst({ where:{ qrSlug: slug }});
   if (!listing) return <div className="p-10">Not found.</div>;
 
   const now = new Date();
@@ -23,7 +24,7 @@ export default async function SalePage({ params }:{ params:{ slug:string }}) {
       <div className="flex gap-3 mt-4">
         <a className="px-3 py-2 bg-white text-black rounded" href={gUrl} target="_blank">Add to Google</a>
         <a className="px-3 py-2 bg-white text-black rounded" href={icsUrl}>Add to Apple/Outlook</a>
-  <Share url={`${process.env.NEXT_PUBLIC_BASE_URL}/s/${params.slug}`} />
+  <Share url={`${process.env.NEXT_PUBLIC_BASE_URL}/s/${slug}`} />
       </div>
       <div className="mt-10">
         <a className="underline" href={`https://maps.google.com/?q=${encodeURIComponent(listing.location)}`} target="_blank">Open in Google Maps</a>

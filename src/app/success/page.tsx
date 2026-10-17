@@ -1,13 +1,30 @@
 "use client";
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 export default function Success() {
+  return (
+    <Suspense fallback={<main className="max-w-xl mx-auto p-6">Loading checkout details…</main>}>
+      <SuccessContent />
+    </Suspense>
+  );
+}
+
+function SuccessContent() {
   const sp = useSearchParams();
   const listingId = sp.get("listing");
   const [style,setStyle] = useState<"MINIMAL"|"BOLD"|"NEWS">("MINIMAL");
 
-  const dl = ()=> window.open(`/api/listings/${listingId}/posters`, "_blank"); // defaults MINIMAL if you prefer
+  if (!listingId) {
+    return (
+      <main className="max-w-xl mx-auto p-6">
+        <h1 className="text-4xl brand-accent mb-4">Checkout complete</h1>
+        <p className="mb-4">No listing was included in this checkout link.</p>
+        <a className="underline" href="/">Return home</a>
+      </main>
+    );
+  }
 
   return (
     <main className="max-w-xl mx-auto p-6">
