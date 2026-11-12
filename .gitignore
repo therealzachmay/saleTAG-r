@@ -6,3 +6,11 @@ dev.db
 /.idea
 .vscode/
 coverage/
+
+# Android signing
+*.keystore
+*.jks
+android/app/
+android/build/
+*.aab
+*.apk

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "../../../lib/stripe";
-import { LISTING_PRICE, assertThreeDayWindow } from "../../../lib/pricing";
-import { randomUUID } from "crypto";
+import { LISTING_PRICE } from "../../../lib/pricing";
 import { prisma } from "../../../lib/prisma";
+import { createDraftListing } from "../../../lib/listings";
 
 function badRequest(msg = "Bad request") {
   return NextResponse.json({ error: msg }, { status: 400 });
@@ -24,17 +24,12 @@ export async function POST(req: NextRequest) {
     // Only support one-off listing payments (flyer unlock)
     if (mode !== "LISTING") return badRequest("Unsupported payment mode. Only LISTING purchases are supported.");
 
-    if (!startsAt || !endsAt || !title || !location) return badRequest("listing fields missing");
-
-    const start = new Date(startsAt);
-    const end = new Date(endsAt);
-    // will throw if invalid window
-    assertThreeDayWindow(start, end);
-
-    const slug = randomUUID().slice(0, 8);
-    const listing = await prisma.listing.create({
-      data: { email, title, location, startsAt: start, endsAt: end, qrSlug: slug, status: "DRAFT" }
-    });
+    let listing;
+    try {
+      listing = await createDraftListing({ email, title, location, startsAt, endsAt });
+    } catch (e: unknown) {
+      return badRequest(e instanceof Error ? e.message : "Bad request");
+    }
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",

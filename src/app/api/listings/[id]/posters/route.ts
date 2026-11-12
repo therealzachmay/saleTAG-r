@@ -24,6 +24,8 @@ export async function POST(req:NextRequest, { params }:{ params: Promise<{ id:st
   }
   const listing = await prisma.listing.findUnique({ where:{ id }});
   if (!listing) return NextResponse.json({ error: "Not found"}, { status:404 });
+  // Posters are the paid product: only unlock them once payment has activated the listing.
+  if (listing.status !== "ACTIVE") return NextResponse.json({ error: "Payment required" }, { status: 402 });
 
   const url = `${process.env.NEXT_PUBLIC_BASE_URL}/s/${listing.qrSlug}`;
   const pdfBytes = await generatePosterPdf({
